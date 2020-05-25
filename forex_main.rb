@@ -9,11 +9,12 @@ rate = JSON.parse(File.read('candles_db.json'))
 
 density          = 16 # плотность отображения японских свеч
 thickness        = 10 # толщина одной свечи
-vertical_padding = 10 # отступ оn верха и низа
+vertical_padding = 10 # отступ графика оn верха и низа холста
 
 top_extremum = to_points(rate.map { |x| x[1]['max'] }.max)
 low_extremum = to_points(rate.map { |x| x[1]['min'] }.min)
-scale_ratio  = (720.0 - vertical_padding * 2) / (top_extremum - low_extremum)
+amplitude    = top_extremum - low_extremum
+scale_ratio  = (720.0 - vertical_padding * 2) / amplitude
 
 
 canvas = Magick::ImageList.new
@@ -70,5 +71,31 @@ candle.stroke_width(1)
 end
 
 
+left_scale = Magick::Draw.new
+left_scale.stroke('black')
+left_scale.stroke_opacity(0)
+left_scale.pointsize(14)
+left_scale.line(10, 0, 10, 720)
+
+
+page_bottom = (low_extremum - 10 / scale_ratio).ceil
+page_top    = (top_extremum + 10 / scale_ratio).floor
+step        = scale_step(amplitude)
+first_mark  = (page_bottom..).find { |x| (x % step).zero? }
+
+
+first_mark.step(page_top, step) do |mark|
+  left_scale.line(10, (top_extremum - mark) * scale_ratio + 10,
+                  20, (top_extremum - mark) * scale_ratio + 10)
+
+  left_scale.stroke_width(0)
+
+  left_scale.text(14,
+                  (top_extremum - mark) * scale_ratio + 10 - 4,
+                  mark.to_s.insert(1, '.'))
+end
+
+
 candle.draw(canvas)
+left_scale.draw(canvas)
 canvas.write('candles_graph.jpg')
