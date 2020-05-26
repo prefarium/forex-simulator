@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'nokogiri'
 
 
 rate   = {}
@@ -25,4 +26,49 @@ euro   = 82.0
 end
 
 
+xml = Nokogiri::XML::Builder.new do |xml|
+  xml.default_settings do
+    xml.canvas do
+      xml.image_height '720'
+      xml.image_width '1280'
+      xml.vertical_padding '10'
+
+      xml.grid do
+        xml.grid_main_color 'white'
+        xml.grid_line_color 'grey95'
+        xml.grid_step '10'
+      end
+    end
+
+    xml.candles do
+      xml.density '14'
+      xml.thickness '10'
+      xml.candle_stroke 'green'
+      xml.candle_fill 'green'
+      xml.candle_stroke_width '1'
+      xml.up_candle_opacity '1'
+      xml.down_candle_opacity '0'
+      xml.start_date '1589749200'
+      xml.finish_date '1589752200'
+    end
+
+    xml.scale do
+      xml.scale_margin '10'
+      xml.scale_stroke 'black'
+      xml.scale_stroke_opacity '0'
+      xml.scale_mark_size '10'
+    end
+
+    xml.font do
+      xml.font_size '14'
+      xml.text_left_padding '5'
+      xml.text_vert_padding '5'
+    end
+  end
+end.to_xml
+
+
+current_path = File.dirname(__FILE__)
+
 File.write('data/candles/minute_candles_db.json', rate.to_json)
+File.write(current_path + '/default_settings.xml', xml)
