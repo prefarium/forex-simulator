@@ -2,8 +2,10 @@
 
 
 class GraphWindow < Magick::ImageList
-  def initialize(settings)
-    super()
+  def initialize
+    super
+
+    settings = read_settings
 
     self.new_image(settings['image_width'],
                    settings['image_height'],
@@ -15,7 +17,23 @@ class GraphWindow < Magick::ImageList
     Candles.new.draw(self)
     LeftScale.new.draw(self)
   end
+
+  private
+
+  def read_settings
+    current_path = File.dirname(__FILE__)
+
+    doc = File.read(current_path + '/data/default_settings.xml')
+              .scan(%r{<(\w+)>(\w+)</\1>})
+
+    settings = {}
+
+    doc.each { |i| settings[i[0]] = i[1].match(/\A\d+\z/) ? i[1].to_i : i[1] }
+
+    settings
+  end
 end
+
 
 class GraphImage < Magick::Draw
   class << self
@@ -239,9 +257,10 @@ class LeftScale < GraphImage
     self.pointsize(settings['font_size'])
     self.text_undercolor('#FFFFFFA5')
 
-    self.line(settings['left_padding'],
+    self.line(settings['scale_margin'],
               0,
-              settings['left_padding'],
+
+              settings['scale_margin'],
               settings['image_height'])
 
     draw_main_marks(settings)
@@ -255,45 +274,50 @@ class LeftScale < GraphImage
                                 settings['scale_main_step']) do |mark|
       y_coord_cashe = to_graph(mark, settings)
 
-      self.line(settings['left_padding'],
+      self.line(settings['scale_margin'],
                 y_coord_cashe,
-                settings['left_padding'] + settings['scale_mark_size'],
+
+                settings['scale_margin'] + settings['scale_mark_size'],
                 y_coord_cashe)
 
-      self.text(settings['left_padding'] + settings['text_left_padding'],
+      self.text(settings['scale_margin'] + settings['text_left_padding'],
                 y_coord_cashe - settings['text_vert_padding'],
                 mark.to_s.insert(1, '.'))
     end
   end
 
+
   def draw_small_marks(settings)
+
     # сокращение шапок итераторов
     first_mark = settings['first_mark']
     top        = settings['page_top']
     bottom     = settings['page_bottom']
     step       = settings['scale_small_step']
 
+
     # отрисовка засечек вверх от первой (first_mark)
     first_mark.step(top, step) do |mark|
       if mark % settings['scale_main_step']
         y_coord_cashe = to_graph(mark, settings)
 
-        self.line(settings['left_padding'],
+        self.line(settings['scale_margin'],
                   y_coord_cashe,
 
-                  settings['left_padding'] + settings['scale_mark_size'] / 2,
+                  settings['scale_margin'] + settings['scale_mark_size'] / 2,
                   y_coord_cashe)
       end
     end
+
 
     # отрисовка засечек вниз от первой (first_mark)
     (first_mark - step).step(bottom, - step) do |mark|
       y_coord_cashe = to_graph(mark, settings)
 
-      self.line(settings['left_padding'],
+      self.line(settings['scale_margin'],
                 y_coord_cashe,
 
-                settings['left_padding'] + settings['scale_mark_size'] / 2,
+                settings['scale_margin'] + settings['scale_mark_size'] / 2,
                 y_coord_cashe)
     end
   end

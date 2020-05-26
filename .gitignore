@@ -1,4 +1,5 @@
 .rubocop.yml
 
 candles_graph.jpg
-/data/candles/minute_candles_db.json
+/data/*
+!/data/candles/.gitkeep
