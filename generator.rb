@@ -26,7 +26,7 @@ euro   = 82.0
 end
 
 
-xml = Nokogiri::XML::Builder.new do |xml|
+default_settings = Nokogiri::XML::Builder.new do |xml|
   xml.default_settings do
     xml.canvas do
       xml.image_height '720'
@@ -71,4 +71,4 @@ end.to_xml
 current_path = File.dirname(__FILE__)
 
 File.write('data/candles/minute_candles_db.json', rate.to_json)
-File.write(current_path + '/default_settings.xml', xml)
+File.write(current_path + '/data/default_settings.xml', default_settings)
