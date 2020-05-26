@@ -2,100 +2,33 @@
 
 require 'rmagick'
 require 'json'
-require_relative 'methods.rb'
+require_relative 'classes.rb'
 
 
-rate = JSON.parse(File.read('candles_db.json'))
-
-density          = 16 # плотность отображения японских свеч
-thickness        = 10 # толщина одной свечи
-vertical_padding = 10 # отступ графика оn верха и низа холста
-
-top_extremum = to_points(rate.map { |x| x[1]['max'] }.max)
-low_extremum = to_points(rate.map { |x| x[1]['min'] }.min)
-amplitude    = top_extremum - low_extremum
-scale_ratio  = (720.0 - vertical_padding * 2) / amplitude
-
-
-canvas = Magick::ImageList.new
-canvas.new_image(1280, 720, Magick::HatchFill.new('white', 'gray93'))
-
-
-candle = Magick::Draw.new
-candle.stroke('green')
-candle.fill('green')
-candle.stroke_width(1)
-
-
-50.times do |i|
-  if rate[i.to_s]['start'] < rate[i.to_s]['finish']
-    candle.fill_opacity(1)
-  else
-    candle.fill_opacity(0)
-  end
+settings = { 'image_width'          => 1280,
+             'image_height'         => 720,
+             'vertical_padding'     => 10,
+             'left_padding'         => 10,
+             'right_padding'        => 10,
+             'grid_main_color'      => 'white',
+             'grid_line_color'      => 'grey95',
+             'grid_step'            => 10,
+             'font_size'            => 14,
+             'density'              => 14,
+             'thickness'            => 10,
+             'candle_stroke'        => 'green',
+             'candle_fill'          => 'green',
+             'candle_stroke_width'  => 1,
+             'up_candle_opacity'    => 1,
+             'down_candle_opacity'  => 0,
+             'start_date'           => 1_589_749_200,
+             'finish_date'          => 1_589_752_200,
+             'scale_stroke'         => 'black',
+             'scale_stroke_opacity' => 0,
+             'scale_mark_size'      => 10,
+             'text_left_padding'    => 5,
+             'text_vert_padding'    => 5 }
 
 
-  candle.rectangle(
-    i * density,
-    (top_extremum - to_points(rate[i.to_s]['start'])) * scale_ratio + 10,
-
-    i * density + thickness,
-    (top_extremum - to_points(rate[i.to_s]['finish'])) * scale_ratio + 10 + 1
-  )
-
-
-  high_end = [rate[i.to_s]['start'], rate[i.to_s]['finish']].max
-  low_end  = [rate[i.to_s]['start'], rate[i.to_s]['finish']].min
-  middle   = i * density + thickness / 2
-
-
-  if rate[i.to_s]['max'] != high_end
-    candle.line(
-      middle,
-      (top_extremum - to_points(high_end)) * scale_ratio + 10,
-
-      middle,
-      (top_extremum - to_points(rate[i.to_s]['max'])) * scale_ratio + 10
-    )
-  end
-
-  if rate[i.to_s]['min'] != low_end
-    candle.line(
-      middle,
-      (top_extremum - to_points(low_end)) * scale_ratio + 10 + 1,
-
-      middle,
-      (top_extremum - to_points(rate[i.to_s]['min'])) * scale_ratio + 10
-    )
-  end
-end
-
-
-left_scale = Magick::Draw.new
-left_scale.stroke('black')
-left_scale.stroke_opacity(0)
-left_scale.pointsize(14)
-left_scale.line(10, 0, 10, 720)
-
-
-page_bottom = (low_extremum - 10 / scale_ratio).ceil
-page_top    = (top_extremum + 10 / scale_ratio).floor
-step        = scale_step(amplitude)
-first_mark  = (page_bottom..).find { |x| (x % step).zero? }
-
-
-first_mark.step(page_top, step) do |mark|
-  left_scale.line(10, (top_extremum - mark) * scale_ratio + 10,
-                  20, (top_extremum - mark) * scale_ratio + 10)
-
-  left_scale.stroke_width(0)
-
-  left_scale.text(14,
-                  (top_extremum - mark) * scale_ratio + 10 - 4,
-                  mark.to_s.insert(1, '.'))
-end
-
-
-candle.draw(canvas)
-left_scale.draw(canvas)
-canvas.write('candles_graph.jpg')
+graph_window = GraphWindow.new(settings)
+graph_window.write('candles_graph.jpg')

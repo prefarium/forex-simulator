@@ -8,7 +8,7 @@ dollar = 75.0
 euro   = 82.0
 
 
-50.times do |i|
+1_589_749_200.step(1_589_752_200, 60) do |i|
   minute_history = []
 
   60.times do
@@ -25,4 +25,4 @@ euro   = 82.0
 end
 
 
-File.write('candles_db.json', rate.to_json)
+File.write('data/candles/minute_candles_db.json', rate.to_json)
