@@ -1,4 +1,5 @@
 .rubocop.yml
+temp.rb
 
 candles_graph.jpg
 /data/*
