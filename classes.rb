@@ -44,7 +44,7 @@ class GraphImage < Magick::Draw
     attr_reader :settings
 
     def take_and_process(settings)
-      settings[:history]          = candles_unjson(rate_history)
+      settings[:history]          = candles_unjson
       settings[:top_extremum]     = top_extremum(settings[:history])
       settings[:low_extremum]     = low_extremum(settings[:history])
       settings[:amplitude]        = amplitude(settings)
@@ -61,19 +61,13 @@ class GraphImage < Magick::Draw
 
     private
 
-    def rate_history
-      current_path = File.dirname(__FILE__)
+    def candles_unjson
+      history = rate_history
 
-      JSON.parse(File.read(current_path +
-          '/data/candles/minute_candles_db.json')).transform_keys(&:to_i)
-    end
+      history.each_key do |key|
+        history[key].transform_keys!(&:to_sym).each_pair do |k, v|
 
-
-    def candles_unjson(rate_history)
-      rate_history.each_key do |key|
-        rate_history[key].transform_keys(&:to_sym).each_pair do |k, v|
-
-          rate_history[key][k] = currency_rate_to_graph_points(v)
+          history[key][k] = currency_rate_to_graph_points(v)
         end
       end
     end
@@ -81,6 +75,14 @@ class GraphImage < Magick::Draw
 
     def currency_rate_to_graph_points(value)
       (value * 10_000).round
+    end
+
+
+    def rate_history
+      current_path = File.dirname(__FILE__)
+
+      JSON.parse(File.read(current_path +
+          '/data/candles/minute_candles_db.json')).transform_keys(&:to_i)
     end
 
 
@@ -94,18 +96,6 @@ class GraphImage < Magick::Draw
     end
 
 
-    def page_top(settings)
-      (settings[:top_extremum] + settings[:vertical_padding] /
-        settings[:scale_ratio]).floor
-    end
-
-
-    def page_bottom(settings)
-      (settings[:low_extremum] - settings[:vertical_padding] /
-        settings[:scale_ratio]).ceil
-    end
-
-
     def amplitude(settings)
       amplitude = settings[:top_extremum] - settings[:low_extremum]
       amplitude == 0 ? 1 : amplitude
@@ -115,6 +105,18 @@ class GraphImage < Magick::Draw
     def scale_ratio(settings)
       (settings[:image_height].to_f - settings[:vertical_padding] * 2) /
         settings[:amplitude]
+    end
+
+
+    def page_top(settings)
+      (settings[:top_extremum] + settings[:vertical_padding] /
+        settings[:scale_ratio]).floor
+    end
+
+
+    def page_bottom(settings)
+      (settings[:low_extremum] - settings[:vertical_padding] /
+        settings[:scale_ratio]).ceil
     end
 
 
