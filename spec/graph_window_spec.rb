@@ -185,4 +185,41 @@ describe 'GraphWindow' do
         @settings[:scale_main_step] * @settings[:scale_ratio]
     end
   end
+
+
+  describe 'candles_unjson' do
+    before(:all) do
+      @history = GraphImage.send(:candles_unjson)
+    end
+
+
+    it 'should only return a hash with symblos as subhashes keys' do
+      @history.each_value do |v|
+        v.each_key { |k| expect(k).to be_a Symbol }
+      end
+    end
+
+
+    it 'should only return a hash with integers as subhashes values' do
+      @history.each_value do |val|
+        val.each_value { |val| expect(val).to be_an Integer }
+      end
+    end
+  end
+
+
+  describe 'to_graph' do
+    it 'should always return values between image top and bottom edges' do
+      upper_edge  = @settings[:top_extremum]
+      lower_edge  = @settings[:low_extremum]
+      graph_image = GraphImage.new
+
+      1000.times do
+        coord = graph_image.send(:to_graph,
+                                 rand(lower_edge..upper_edge),
+                                 @settings)
+        expect(coord).to be_between(0, 719)
+      end
+    end
+  end
 end

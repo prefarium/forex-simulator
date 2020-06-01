@@ -140,7 +140,7 @@ class GraphImage < Magick::Draw
       # предварительно-приблизительный шаг основных отметин шкалы
       approx_step_size = amplitude / 5
 
-      # попарно: базовые образующие для шагов основных и меньших шагов шкалы
+      # попарно: базовые образующие для основных и меньших шагов шкалы
       base_values = [[10, 2], [20, 5], [25, 5], [50, 10], [100, 20]]
 
       # разность порядков базовых образующих и приблизительного шага шкалы
@@ -149,7 +149,7 @@ class GraphImage < Magick::Draw
       # приводим базу к порядку приблизительного шага и дополняем пары значением
       #   удаленности приблизительного шага от каждого комфортного значения
       upd_values = base_values.map do |arr|
-        arr.map! { |v| v = v * 10**power_difference }
+        arr.map! { |v| v * 10**power_difference }
         arr << (arr[0] - approx_step_size).abs
       end
 
@@ -284,12 +284,12 @@ class LeftScale < GraphImage
 
       self.text(settings[:scale_margin] + settings[:text_left_padding],
                 y_coord_cashe - settings[:text_vert_padding],
-                mark_number(mark))
+                mark_value(mark))
     end
   end
 
 
-  def mark_number(mark)
+  def mark_value(mark)
     mark = mark.to_s
     (5 - mark.size).times { mark.prepend('0') } if mark.size < 5
     mark.insert(-5, '.')
