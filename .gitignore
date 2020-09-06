@@ -4,3 +4,5 @@ temp.rb
 candles_graph.jpg
 /data/*
 !/data/candles/.gitkeep
+
+/classes

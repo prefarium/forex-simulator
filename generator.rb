@@ -3,30 +3,32 @@
 require 'json'
 require 'nokogiri'
 
-
 rate   = {}
 dollar = 75.0
 euro   = 82.0
 
-
+# Генерируем историю колебаний курса за 60 минут
 1_589_749_200.step(1_589_752_200, 60) do |i|
-  minute_history = []
+  minute_history = [] # Массив с историей за 1 минуту
 
+  # Генерируем и сохраняем историю за минуту
   60.times do
     dollar = (dollar + rand(-1..1.5)).round(4)
     euro   = (euro   + rand(-0.5..2)).round(4)
-
+    # Для изменения динамики курса отредактируйте разброс значений в rand()
     minute_history << (euro / dollar).round(4)
   end
 
-  rate[i] = { 'start'  => minute_history[0],
-              'finish' => minute_history[-1],
-              'max'    => minute_history.max,
-              'min'    => minute_history.min }
+  # Сохраняем определенные показатели курса для отрисовки свечи в будущем
+  rate[i] = { 'start' => minute_history[0],
+             'finish' => minute_history[-1],
+                'max' => minute_history.max,
+                'min' => minute_history.min }
 end
 
-
+# Генерируем стандартные настройки холста и его содержимого
 default_settings = Nokogiri::XML::Builder.new do |xml|
+  # Параметры холста
   xml.default_settings do
     xml.canvas do
       xml.image_height '720'
@@ -40,6 +42,7 @@ default_settings = Nokogiri::XML::Builder.new do |xml|
       end
     end
 
+    # Внишний вид свечей
     xml.candles do
       xml.density '14'
       xml.thickness '10'
@@ -52,6 +55,7 @@ default_settings = Nokogiri::XML::Builder.new do |xml|
       xml.finish_date '1589752200'
     end
 
+    # Внешний вид боковой линейки
     xml.scale do
       xml.scale_margin '10'
       xml.scale_stroke 'black'
@@ -59,6 +63,7 @@ default_settings = Nokogiri::XML::Builder.new do |xml|
       xml.scale_mark_size '10'
     end
 
+    # Шрифт линейки
     xml.font do
       xml.font_size '14'
       xml.text_left_padding '5'
@@ -66,7 +71,6 @@ default_settings = Nokogiri::XML::Builder.new do |xml|
     end
   end
 end.to_xml
-
 
 current_path = File.dirname(__FILE__)
 
