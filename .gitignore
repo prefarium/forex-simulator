@@ -1,6 +1,9 @@
-.rubocop.yml
-temp.rb
+# Bundler
+/.bundle
 
-candles_graph.jpg
+# БД
 /data/*
 !/data/candles/.gitkeep
+
+# Отрисованный график
+candles_graph.jpg
