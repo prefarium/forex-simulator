@@ -184,6 +184,7 @@ class GraphImage < Magick::Draw
   end
 
   private
+    # Метод переводит значения курса в значения на графике
     def to_graph(value, settings)
       ( (settings[:top_extremum] - value) *
           settings[:scale_ratio] + settings[:vertical_padding]
@@ -197,6 +198,7 @@ class Candles < GraphImage
 
     settings = GraphImage.settings
 
+    # Устанавливаем внешний вид свечи
     stroke(settings[:candle_stroke])
     fill(settings[:candle_fill])
     stroke_width(settings[:candle_stroke_width])
@@ -206,19 +208,28 @@ class Candles < GraphImage
 
   private
     def draw_candles(settings)
+      # Движемся по временному промежутку с шагом в 60 секунд
+      # Для каждой временной отметки (timestamp)
+      #   существует соответствующая свеча
       settings[:start_date].step(settings[:finish_date], 60)
-                           .with_index do |i, nth_candle|
+                           .with_index do |timestamp, nth_candle|
+        # Кэш служит для передачи результатов вычислений
+        #   из draw_candle_body в draw_candle_shadows
         candle_cashe = {}
 
-        set_candle_opacity(i, settings)
+        set_candle_opacity(timestamp, settings)
 
-        draw_candle_body(i, nth_candle, settings, candle_cashe)
-        draw_candle_shadows(i, nth_candle, settings, candle_cashe)
+        draw_candle_body(timestamp, nth_candle, settings, candle_cashe)
+        draw_candle_shadows(timestamp, nth_candle, settings, candle_cashe)
       end
     end
 
-    def set_candle_opacity(idx, settings)
-      if settings[:history][idx][:start] < settings[:history][idx][:finish]
+    # Во всех методах ниже конструкция settings[:history][timestamp] находит
+    #   свечу по её временной метке
+
+    def set_candle_opacity(timestamp, settings)
+      if settings[:history][timestamp][:start] <
+           settings[:history][timestamp][:finish]
         fill_opacity(settings[:up_candle_opacity])
 
       else
@@ -226,10 +237,10 @@ class Candles < GraphImage
       end
     end
 
-    def draw_candle_body(idx, nth_candle, settings, candle_cashe)
-      candle_cashe[:start]  = to_graph(settings[:history][idx][:start],
+    def draw_candle_body(timestamp, nth_candle, settings, candle_cashe)
+      candle_cashe[:start]  = to_graph(settings[:history][timestamp][:start],
                                        settings)
-      candle_cashe[:finish] = to_graph(settings[:history][idx][:finish],
+      candle_cashe[:finish] = to_graph(settings[:history][timestamp][:finish],
                                        settings)
 
       rectangle(nth_candle * settings[:density],
@@ -238,16 +249,21 @@ class Candles < GraphImage
                 candle_cashe[:finish] + 1)
     end
 
-    def draw_candle_shadows(idx, nth_candle, settings, candle_cashe)
-      min = to_graph(settings[:history][idx][:min], settings)
-      max = to_graph(settings[:history][idx][:max], settings)
+    def draw_candle_shadows(timestamp, nth_candle, settings, candle_cashe)
+      min = to_graph(settings[:history][timestamp][:min], settings)
+      max = to_graph(settings[:history][timestamp][:max], settings)
 
+      # Для вычисления верхней границы тела свечи используется метод .min,
+      #   так как гем rmagick создаёт холст с перевернутой системой координат,
+      #   где точка (0;0) находится в левом верхнем углу
+      # Аналогично с нижней границей
       high_end = [candle_cashe[:start], candle_cashe[:finish]].min
       low_end  = [candle_cashe[:start], candle_cashe[:finish]].max
+
+      # Середина свечи по горизонтали
       middle   = nth_candle * settings[:density] + settings[:thickness] / 2
 
-      line(middle, high_end, middle, max) if max != high_end
-
+      line(middle, high_end,    middle, max) if max != high_end
       line(middle, low_end + 1, middle, min) if min != low_end
     end
 end
@@ -258,6 +274,7 @@ class LeftScale < GraphImage
 
     settings = GraphImage.settings
 
+    # Устанавливаем внешний вид шкалы
     stroke(settings[:scale_stroke])
     stroke_opacity(settings[:scale_stroke_opacity])
     pointsize(settings[:font_size])
@@ -275,20 +292,21 @@ class LeftScale < GraphImage
   private
     def draw_main_marks(settings)
       settings[:first_mark].step(settings[:page_top],
-                                settings[:scale_main_step]) do |mark|
+                                 settings[:scale_main_step]) do |mark|
         y_coord_cashe = to_graph(mark, settings)
 
         line(settings[:scale_margin],
-            y_coord_cashe,
-            settings[:scale_margin] + settings[:scale_mark_size],
-            y_coord_cashe)
+             y_coord_cashe,
+             settings[:scale_margin] + settings[:scale_mark_size],
+             y_coord_cashe)
 
         text(settings[:scale_margin] + settings[:text_left_padding],
-            y_coord_cashe - settings[:text_vert_padding],
-            mark_value(mark))
+             y_coord_cashe - settings[:text_vert_padding],
+             mark_value(mark))
       end
     end
 
+    # Приводит все марки к виду 2.1000, 0.0500, 3.0090
     def mark_value(mark)
       mark = mark.to_s
       (5 - mark.size).times { mark.prepend('0') } if mark.size < 5
@@ -296,32 +314,33 @@ class LeftScale < GraphImage
     end
 
     def draw_small_marks(settings)
-      # Сокращение шапок итераторов
+      # Назначаем настройки переменным, уменьшая размер шапок в циклах ниже
       first_mark = settings[:first_mark]
       top        = settings[:page_top]
       bottom     = settings[:page_bottom]
       step       = settings[:scale_small_step]
 
-      # Отрисовка засечек вверх от первой (first_mark)
+      # Отрисовка засечек вверх от первой
       first_mark.step(top, step) do |mark|
+        # Если малая засечка попадает на основную засечку, то не рисуем её
         if mark % settings[:scale_main_step]
           y_coord_cashe = to_graph(mark, settings)
 
           line(settings[:scale_margin],
-              y_coord_cashe,
-              settings[:scale_margin] + settings[:scale_mark_size] / 2,
-              y_coord_cashe)
+               y_coord_cashe,
+               settings[:scale_margin] + settings[:scale_mark_size] / 2,
+               y_coord_cashe)
         end
       end
 
-      # отрисовка засечек вниз от первой (first_mark)
+      # Отрисовка засечек вниз от первой вниз
       (first_mark - step).step(bottom, - step) do |mark|
         y_coord_cashe = to_graph(mark, settings)
 
         line(settings[:scale_margin],
-            y_coord_cashe,
-            settings[:scale_margin] + settings[:scale_mark_size] / 2,
-            y_coord_cashe)
+             y_coord_cashe,
+             settings[:scale_margin] + settings[:scale_mark_size] / 2,
+             y_coord_cashe)
       end
     end
 end
